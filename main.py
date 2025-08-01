@@ -7,15 +7,19 @@ def apnd(thing,display):
         clear()
     display.set(display.get()+ str(thing))
 def operator(thing, display):
-    if (error_status.get()==False and str(display.get())!="" and display.get()[-1] not in ['+','-','/','x']):
+    if (error_status.get()==False and str(display.get())!="" and display.get()[-1] not in ['+','-','/','x',"(-)"]):
         apnd(thing,display)
     
-        
+       
 def clear():
     display.set("")
 def err(code):
-    display.set("Err: ")
+    display.set("Err: " +code)
     error_status.set(True)
+def negs(display,neg):
+    if (display.get()[-1]in['+','-','/','x']):
+        error_status=True
+        apnd("(-)")
     
     
     
@@ -25,9 +29,18 @@ def err(code):
     
     
     
-    #post processing
+#post processing
 
 #tokenization
+def errCatch(s):
+    ret=""
+    if (s[-1] in ['+','-','/','x']):
+        ret="Improper Syntax"
+    for i in range(2,len(s),1):
+        if (s[i-1]=='/' and s[i]==0):
+            ret="Divide by Zero"
+    return ret
+    
 def divmerge(arr):
     left = float(arr[0][1:])
     right = float(arr[1][1:])
@@ -81,6 +94,8 @@ def full(display):
             total-=num
     display.set(str(total))
     error_status.set(True)
+    if (total>1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000):
+        err("Screw you.")
 
 
 '''  
@@ -117,6 +132,9 @@ error_status=tk.BooleanVar()
 error_status.set(False)
 display=tk.StringVar()
 display.set("")
+neg=tk.BooleanVar()
+neg.set(False)
+
 
 disp = tk.Label(dispFrame,textvariable=display)
 disp.grid(row=0, column=0, columnspan=5, pady=10,sticky="we")
@@ -165,6 +183,9 @@ plus.grid(row=1,column=3)
 
 minus =tk.Button(thing, text="-",command= lambda: operator("-", display) )
 minus.grid(row=2,column=3)
+
+neg =tk.Button(thing, text="(-)",command= lambda: operator("(-)", display) )
+minus.grid(row=2,column=4)
 
 multiply =tk.Button(thing, text="x",command= lambda: operator("x", display) )
 multiply.grid(row=3,column=3)
