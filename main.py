@@ -135,7 +135,6 @@ def full(display):
                 else:
                     i+=1
                     
-            print(token_pool)
             
             for j in range(0,len(token_pool),1):
                 num= float(token_pool[j][1:])
