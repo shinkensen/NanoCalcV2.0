@@ -1,6 +1,16 @@
-import tkinter as tk
-from tkinter import messagebox
 
+'''
+Memory optimization techniques used:
+
+1. Global use of token_pool to reduce number of local variable intiializations and creations
+2. Use of Garbage Collection after major computations
+3. Deleting and cleaning variables with 1 time use
+'''
+
+
+import tkinter as tk
+import gc
+token_pool=[]
 def apnd(thing,display):
     if (error_status.get()==True):
         error_status.set(False)
@@ -9,40 +19,61 @@ def apnd(thing,display):
 def operator(thing, display):
     if (error_status.get()==False and str(display.get())!="" and display.get()[-1] not in ['+','-','/','x',"(-)"]):
         apnd(thing,display)
+        neg.set(False)
     
        
 def clear():
     display.set("")
+    neg.set(False)
 def err(code):
     display.set("Err: " +code)
     error_status.set(True)
 def negs(display,neg):
-    if (display.get()[-1]in['+','-','/','x']):
-        error_status=True
-        apnd("(-)")
+    if ((display.get()=="" or display.get()[-1]in['+','-','/','x']) and not neg.get()):
+        apnd("—",display)
+        neg.set(True)
+    
+    
+'''
+hmm a problem that i see when integrating negative numbers is that i cannot use an opperator on them cause my tokenizer works on that
+
+wait... i just realized i can use a symbol like _ to act as an place holder which i will swap out post tokenization for the "-"_
+
+'''  
     
     
     
-    
-    
-    
-    
-    
+#so this is the next step, adding support for negative numbers
+#so this is how the whole negative number thing will work, we will first root out all the possible problems like incorrect syntax. (if we cant rule out problems in the original stage, we can do it post tokenization)
     
 #post processing
 
 #tokenization
+def negcnvrt():
+    global token_pool
+    token_pool[:]= [token.replace('—', '-') for token in token_pool]
+'''
+def negcnvrt(tokens):
+    for i in range(len(tokens)):
+        if ('—' in tokens[i]):
+            simple=list(tokens[i])
+            for j in range(len(simple)):
+                if (simple[j]=='—'):
+                    simple[j]='-'
+            tokens[i]=''.join(simple)
+    return tokens
+'''
 def errCatch(s):
     ret=""
     if (s[-1] in ['+','-','/','x']):
         ret="Improper Syntax"
     for i in range(2,len(s),1):
-        if (s[i-1]=='/' and s[i]==0):
+        if (s[i-1]=='/' and (s[i]=='0' or s[i+1]=='0')):
             ret="Divide by Zero"
     return ret
     
 def divmerge(arr):
-    left = float(arr[0][1:])
+    left = float(arr[0][1:]) 
     right = float(arr[1][1:])
     return arr[0][0] + str(left / right)
 
@@ -52,50 +83,71 @@ def multimerge(arr):
     return arr[0][0] + str(left * right)
 
 def process(display):
+    global token_pool
+    token_pool.clear()
     text=display.get()
     # how i will do this: tokenize operator-number pairs, combine the divisions like +4, /8 to +,4/8 then calculate the 4/8 and then merge to do +0.5
-    text="+"+ text
-    temp="+"
-    tokens=[]
+    if(not text[0]=="-"):
+        text="+"+ text
+        temp="+"
+    if (errCatch(text)!=""):
+        err(errCatch(text))
+        token_pool.clear()
+        token_pool.append("err")
     for i in range(1, len(text),1):
         if(text[i] not in ['+','-','x','/']):
             temp+=text[i]
         else:
-            tokens.append(temp)
+            token_pool.append(temp)
             temp=text[i]
-    tokens.append(temp)
-    return tokens
+    token_pool.append(temp)
+    return token_pool
 def full(display):
-    tokens=process(display)
-    i=1
-    total=0
-    while (i<len(tokens)):
-        if (tokens[i][0]=='/'):
-            arr=[tokens[i-1],tokens[i]]
-            tokens[i-1]=divmerge(arr)
-            tokens.pop(i)
-        else:
-            i+=1
-    i=1
-    while (i<len(tokens)):
-        if (tokens[i][0]=='x'):
-            arr=[tokens[i-1],tokens[i]]
-            tokens[i-1]=multimerge(arr)
-            tokens.pop(i)
-        else:
-            i+=1
+    if (display.get()==""):
+        err("Empty Input")
+    elif (display.get()=="—"):
+        err("Invalid Syntax")
+    else:
+        global token_pool
+        '''tokens='''
+        process(display)
+        if token_pool[0]!="err":
+            i=1
+            total=0
+            negcnvrt()
+            while (i<len(token_pool)):
+                if (token_pool[i][0]=='/'):
+                    arr=[token_pool[i-1],token_pool[i]]
+                    token_pool[i-1]=divmerge(arr)
+                    token_pool.pop(i)
+                    del arr
+                    gc.collect()
+                else:
+                    i+=1
+            i=1
+            while (i<len(token_pool)):
+                if (token_pool[i][0]=='x'):
+                    arr=[token_pool[i-1],token_pool[i]]
+                    token_pool[i-1]=multimerge(arr)
+                    token_pool.pop(i)
+                    del arr
+                    gc.collect()
+                else:
+                    i+=1
+                    
+            print(token_pool)
             
-    print(tokens)
-    for j in range(0,len(tokens),1):
-        num= float(tokens[j][1:])
-        if (tokens[j][0]=='+'):
-            total+=num
-        else:
-            total-=num
-    display.set(str(total))
-    error_status.set(True)
-    if (total>1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000):
-        err("Screw you.")
+            for j in range(0,len(token_pool),1):
+                num= float(token_pool[j][1:])
+                if (token_pool[j][0]=='+'):
+                    total+=num
+                else:
+                    total-=num
+            display.set(str(total))
+            error_status.set(True)
+            if (total>1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000):
+                err("Screw you.")
+    gc.collect()
 
 
 '''  
@@ -184,8 +236,8 @@ plus.grid(row=1,column=3)
 minus =tk.Button(thing, text="-",command= lambda: operator("-", display) )
 minus.grid(row=2,column=3)
 
-neg =tk.Button(thing, text="(-)",command= lambda: operator("(-)", display) )
-minus.grid(row=2,column=4)
+nega =tk.Button(thing, text="(-)",command= lambda: negs(display,neg) )
+nega.grid(row=2,column=4)
 
 multiply =tk.Button(thing, text="x",command= lambda: operator("x", display) )
 multiply.grid(row=3,column=3)
@@ -194,7 +246,8 @@ divide =tk.Button(thing, text="/",command= lambda: operator("/", display) )
 divide.grid(row=4,column=3)
 #thing is like the grid and placement framework that we are using and then we do text="+" and command=lambada: (which basically tells the program to run the following section of code only when the button is clicked) and then the function which in our case is opperator.
 
-
+if (len(display.get())>100):
+    err("Too Long")
 
 app.mainloop()
 
