@@ -67,9 +67,9 @@ def errCatch(s):
     ret=""
     if (s[-1] in ['+','-','/','x']):
         ret="Improper Syntax"
-    for i in range(2,len(s),1):
-        if (s[i-1]=='/' and (s[i]=='0' or s[i+1]=='0')):
-            ret="Divide by Zero"
+    for i in range(1, len(s)):
+        if s[i-1] == '/' and s[i] == '0':
+            ret = "Divide by Zero"
     return ret
     
 def divmerge(arr):
